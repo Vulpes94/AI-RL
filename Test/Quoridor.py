@@ -23,7 +23,7 @@ from tqdm import tqdm
 import copy
 
 from keras.models import Sequential
-from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.optimizers import SGD
 from keras import metrics
 from keras.layers import Dense, Flatten, Conv2D
 from keras.models import load_model
@@ -41,74 +41,63 @@ class Environment():
         self.done = False
         self.reward = 0
         self.winner = 0
-        self.print = False
+        self.wall = -1
         
-        self.wall = -2
-        
-    def move(self, p1, p2, player):
-    # 각 플레이어가 선택한 행동을 표시 하고 게임 상태(진행 또는 종료)를 판단
-    # p1 = 1, p2 = -1로 정의
-    # 각 플레이어는 행동을 선택하는 select_action 메서드를 가짐
-        if player == 1:
-            position = p1.select_action(env, player)
-        else:
-            position = p2.select_action(env, player)
-        
+    def move(self,player):
         pos = [[i,j] for i in range(17) for j in range(17) if self.board[i][j]==player]
         
         # 보드에 플레이어의 선택을 표시
-        if(position == 2):
-            self.board[pos[0][0]][pos[0][1]] = 0
-            self.board[pos[0][0]][pos[0][1] + 2] = player
-        elif(position == 6):
-            self.board[pos[0][0]][pos[0][1]] = 0
-            self.board[pos[0][0]][pos[0][1] - 2] = player
-        elif(position == 0):
+        if(position == 0):
             self.board[pos[0][0]][pos[0][1]] = 0
             self.board[pos[0][0] -2][pos[0][1]] = player
+        elif(position == 1):
+            self.board[pos[0][0]][pos[0][1]] = 0
+            self.board[pos[0][0] -2][pos[0][1] +2] = player
+        elif(position == 2):
+            self.board[pos[0][0]][pos[0][1]] = 0
+            self.board[pos[0][0]][pos[0][1] + 2] = player
         elif(position == 4):
             self.board[pos[0][0]][pos[0][1]] = 0
             self.board[pos[0][0] +2][pos[0][1]] = player
-        
-        if self.print:
-            print(player)
-            self.print_board()
-        # 게임이 종료상태인지 아닌지를 판단
-        self.end_check(player)
-        
-        return  self.reward, self.done
-    
+        elif(position == 6):
+            self.board[pos[0][0]][pos[0][1]] = 0
+            self.board[pos[0][0]][pos[0][1] - 2] = player
+        elif(position == 8):
+            self.board[pos[0][0]][pos[0][1]] = 0
+            self.board[pos[0][0] -4][pos[0][1]] = player
+        elif(position == 9):
+            self.board[pos[0][0]][pos[0][1]] = 0
+            self.board[pos[0][0]][pos[0][1] + 4] = player
+        elif(position == 10):
+            self.board[pos[0][0]][pos[0][1]] = 0
+            self.board[pos[0][0] +4][pos[0][1]] = player
+        elif(position == 11):
+            self.board[pos[0][0]][pos[0][1]] = 0
+            self.board[pos[0][0]][pos[0][1] -4] = player    
         
     # 현재 보드 상태에서 가능한 행동(최대 136)을 탐색하고 리스트로 반환
     # 벽 관련 스크립트 추가 필요
-    def get_action(self,player):
+    def get_action(self,player,wallCount):
         observation = []
         pos = [[i,j] for i in range(17) for j in range(17) if self.board[i][j]==player]
         
-        east = pos[0][1] + 2;
-        eeast = pos[0][1] + 4;
-        west = pos[0][1] - 2;
-        wwest = pos[0][1] - 4;
-        north = pos[0][0] - 2;
-        nnorth = pos[0][0] - 4;
-        south =  pos[0][0]+ 2;
-        ssouth =  pos[0][0] + 4;
+        east = pos[0][1] + 2; eeast = pos[0][1] + 4;
+        west = pos[0][1] - 2; wwest = pos[0][1] - 4;
+        north = pos[0][0] - 2; nnorth = pos[0][0] - 4;
+        south =  pos[0][0]+ 2; ssouth =  pos[0][0] + 4;
         
         N = 0 ;NE = 1 ;E = 2 ;SE = 3
         S = 4 ;SW = 5 ;W = 6 ;NW = 7
-        
-        NN = 8;EE = 9;SS=10;WW=11
-        
-        
+        NN = 8;EE = 9;SS=10;WW=11  
         
         # 동쪽 이동 (도착지가 보드를 이탈하지 않고 이동경로에 벽이 없을 때)
-        if (east <= 16 and self.board[playerPos0][east - 1] != self.wall):
-            if (self.board[playerPos0][east] == 0):
+        if (east <= 16 and self.board[pos[0][0]][east - 1] != self.wall):
+            if (self.board[pos[0][0]][east] == 0):
                 observation.append(E)
             # 동쪽에 플레이어가 있을 때
             else:
                 # 동쪽 두칸 이동 (도착지가 보드를 이탈하지 않고 이동경로에 벽에 없을 때)
-                if (eeast <= 16 and self.board[playerPos0][eeast - 1] != self.wall):
+                if (eeast <= 16 and self.board[pos[0][0]][eeast - 1] != self.wall):
                     observation.append(EE)
                 else:
                     # 대각선(북동) 이동 (도착지의 북쪽이 보드를 이탈하지 않고 이동경로에 벽이 없을 때)
@@ -120,13 +109,13 @@ class Environment():
                       observation.append(SE)
                 
         # 서쪽 이동 (도착지가 보드를 이탈하지 않고 이동경로에 벽이 없을 때)
-        if (west >= 0 and self.board[playerPos0][west + 1] != self.wall):
-            if (self.board[playerPos0][west] == 0):
+        if (west >= 0 and self.board[pos[0][0]][west + 1] != self.wall):
+            if (self.board[pos[0][0]][west] == 0):
                 observation.append(W)
             # 서쪽에 플레이어가 있을 때
             else:
                 # 서쪽 두칸 이동 (도착지가 보드를 이탈하지 않고 이동경로에 벽에 없을 때)
-                if (wwest >= 0 and self.board[playerPos0][wwest + 1] != self.wall):
+                if (wwest >= 0 and self.board[pos[0][0]][wwest + 1] != self.wall):
                     observation.append(WW)
                 else:
                     # 대각선(북서) 이동 (도착지의 북쪽이 보드를 이탈하지 않고 이동경로에 벽이 없을 때)
@@ -138,13 +127,13 @@ class Environment():
                       observation.append(SW)     
 
         # 북쪽 이동 (도착지가 보드를 이탈하지 않고 이동경로에 벽이 없을 때)
-        if (north >= 0 and self.board[north + 1][playerPos1] != self.wall):
-            if (self.board[north][playerPos1] == 0):
+        if (north >= 0 and self.board[north + 1][pos[0][1]] != self.wall):
+            if (self.board[north][pos[0][1]] == 0):
                 observation.append(N)
             # 북쪽에 플레이어가 있을 때
             else:
                 # 북쪽 두칸 이동 (도착지가 보드를 이탈하지 않고 이동경로에 벽에 없을 때)
-                if (nnorth >= 0 and self.board[nnorth + 1][playerPos1] != self.wall):
+                if (nnorth >= 0 and self.board[nnorth + 1][pos[0][1]] != self.wall):
                     observation.append(NN)
                 else:
                     # 대각선(북서) 이동 (도착지의 서쪽이 보드를 이탈하지 않고 이동경로에 벽이 없을 때)
@@ -158,13 +147,13 @@ class Environment():
                             observation.append(NE)
 
         # 남쪽 이동 (도착지가 보드를 이탈하지 않고 이동경로에 벽이 없을 때)
-        if (south <= 16 and self.board[south - 1][playerPos1] != self.wall):
-            if (self.board[south][playerPos1] == 0):
+        if (south <= 16 and self.board[south - 1][pos[0][1]] != self.wall):
+            if (self.board[south][pos[0][1]] == 0):
                 observation.append(S)
             # 남쪽에 플레이어가 있을 때
             else:
                 # 남쪽 두칸 이동 (도착지가 보드를 이탈하지 않고 이동경로에 벽에 없을 때)
-                if (ssouth <= 16 and self.board[ssouth - 1][playerPos1] != self.wall):
+                if (ssouth <= 16 and self.board[ssouth - 1][pos[0][1]] != self.wall):
                     observation.append(SS)
                 else:
                     # 대각선(남서) 이동 (도착지의 서쪽이 보드를 이탈하지 않고 이동경로에 벽이 없을 때)
@@ -180,11 +169,12 @@ class Environment():
         return observation
     
     def end_check(self,player):
+        # 상단에 플레이어 2, 하단에 플레이어 1 setting
         end_condition = [0,2,4,6,8,10,12,14,16]
         for line in end_condition:
-            if((player == 1 and self.board[16][line] == 1) or player == -1 and self.board[0][line] == -1):
+            if((player == 1 and self.board[0][line] == 1) or player == 2 and self.board[16][line] == 2):
                 self.done = True
-                self.reward = player
+                self.winner = player
                 return
     
     def print_board(self):
@@ -208,11 +198,12 @@ class DQN_player():
         self.target_network = self.make_network()
         # 메인 신경망의 가중치를 타깃 신경망의 가중치로 복사
         self.copy_network()
+
         self.count = np.zeros(136)
         self.win = np.zeros(136)
-        self.print = False
-        self.print1 = False
         self.begin = 0
+        
+        self.print = False
         self.wallCount = 10
     
     # 신경망 생성
@@ -228,9 +219,8 @@ class DQN_player():
         self.model.add(Dense(128, activation='tanh'))
         self.model.add(Dense(64, activation='tanh'))
         self.model.add(Dense(136))
-        print(self.model.summary())
-
-        self.model.compile(optimizer = Adam(), loss = 'mean_squared_error', metrics=['mse'])
+        
+        self.model.compile(optimizer = SGD(learning_rate=0.01), loss = 'mean_squared_error', metrics=['mse'])
         
         return self.model
 
@@ -239,19 +229,20 @@ class DQN_player():
          self.target_network.set_weights(self.main_network.get_weights())
 
     def save_network(self,name):
-        filename = name + '_main_network.h5'
+        filename = name + '.h5'
         self.main_network.save(filename)
         print("end save model")
         
     def state_convert(self, board):
+        # 1은 p1 ,2는 p2 ,-1은 wall
         d_state = np.full((17,17,3),0.1)
         for i in range(17):
             for j in range(17):
                 if board[i][j] == 1:
                     d_state[i,j,0] = 1
-                elif board[i][j] == -1:
+                elif board[i][j] == 2:
                     d_state[i,j,1] = 1
-                elif board[i][j] == -2:
+                elif board[i][j] == -1:
                     d_state[i,j,2] = 1
                 else:
                     pass
@@ -260,20 +251,15 @@ class DQN_player():
     def select_action(self, env, player):
         action = self.policy(env, player)
 
-        if self.print1:
-            print("{} : policy state".format(available_state))
-            print("{} : qvalues".format(np.round(qvalues,3)))
-            print("{} : select action".format(action))
-            
         return action
     
     def policy(self, env, player):
         if self.print:
-            print("-----------   policy start -------------")
+            print("----------- policy start -------------")
         
         # 행동 가능한 상태를 저장
-        available_state = env.get_action(player)
-        
+        available_state = env.get_action(player,self.wallCount)
+
         state_3d = self.state_convert(env.board)
         x = np.array([state_3d],dtype=np.float32).astype(np.float32)
         qvalues = self.main_network.predict(x)[0,:]
@@ -293,7 +279,7 @@ class DQN_player():
         if self.print:
             print("{} : self.epsilon".format(self.epsilon))
             print("{} : greedy_action".format(greedy_action))
-            print("{} : qvalue = {}".format(available_state_qvalues[greedy_action]))
+            print("{} : qvalue".format(available_state_qvalues[greedy_action]))
         
         # max Q-value와 같은 값이 여러개 있는지 확인한 후 double_check에 상태를 저장
         double_check = (np.where(qvalues == np.max(available_state[greedy_action]),1,0))
@@ -349,7 +335,7 @@ class DQN_player():
             print("-----------   learn_qtable start -------------")
             print("{} : board_backup".format(board_backup))
             print("{} : action_backup".format(action_backup))
-            print("{} : reward = {}".format(reward))
+            print("{} : reward.".format(reward))
     
         if env.done == True:
             if reward == 1:
@@ -370,7 +356,6 @@ class DQN_player():
                 after_action_value = copy.deepcopy(self.main_network.predict(x)[0,:])
                 delta = after_action_value - before_action_value
                 print("{} : before_action_value id = {}".format(np.round(before_action_value,3),id(before_action_value)))
-                print("{} : target_action_value id = {}".format(np.round(target_action_value,3),id(target_action_value)))
                 print("{} : after_action_value id = {}".format(np.round(after_action_value,3),id(after_action_value)))
                 print("{} : delta action value".format(np.round(delta,3)))
                 state = [[0 for j in range(17)] for i in range(17)]
@@ -385,7 +370,7 @@ class DQN_player():
             new_state = self.state_convert(env.board)
             next_x = np.array([new_state],dtype=np.float32).astype(np.float32)
             next_qvalues = self.target_network.predict(next_x)[0,:]
-            available_state = env.get_action(player)
+            available_state = env.get_action(player,self.wallCount)
             maxQ = np.max(next_qvalues[available_state])            
             
             if self.print:
@@ -439,9 +424,8 @@ np.random.seed(0)
 p1_DQN = DQN_player()
 p2_DQN = DQN_player()
 
-print_opt = False
-p1_DQN.print = print_opt
-p1_DQN.print1 = print_opt
+p1_DQN.print = False
+p2_DQN.print = False
 
 p1_score = 0
 p2_score = 0
@@ -454,9 +438,9 @@ print("p2 player is {}".format(p2_DQN.name))
 for j in tqdm(range(max_learn)):
     np.random.seed(j)
     env = Environment()
-    # 상단에 플레이어 1, 하단에 플레이어 2
-    env.board[0][8] = 1
-    env.board[16][8] = -1
+    # 상단에 플레이어 2, 하단에 플레이어 1 setting
+    env.board[0][8] = 2
+    env.board[16][8] = 1
         
     # 시작할 때 메인 신경망의 가중치를 타깃 신경망의 가중치로 복사
     p1_DQN.epsilon = 0.7
@@ -473,21 +457,7 @@ for j in tqdm(range(max_learn)):
         p1_board_backup = tuple(env.board)
         p1_action_backup = position
         
-        pos = [[i,j] for i in range(17) for j in range(17) if env.board[i][j]==player]
-
-        if(position == 2):
-            env.board[pos[0][0]][pos[0][1]] = 0
-            env.board[pos[0][0]][pos[0][1] + 2] = player
-        elif(position == 6):
-            env.board[pos[0][0]][pos[0][1]] = 0
-            env.board[pos[0][0]][pos[0][1] - 2] = player
-        elif(position == 0):
-            env.board[pos[0][0]][pos[0][1]] = 0
-            env.board[pos[0][0] -2][pos[0][1]] = player
-        elif(position == 4):
-            env.board[pos[0][0]][pos[0][1]] = 0
-            env.board[pos[0][0] +2][pos[0][1]] = player
-        
+        env.move(player)
         env.end_check(player)
 
     # 게임 종료라면
@@ -500,27 +470,13 @@ for j in tqdm(range(max_learn)):
             break
 
         # p2 행동을 선택
-        player = -1
+        player = 2
         position = p2_DQN.policy(env,player)
 
         p2_board_backup = tuple(env.board)
         p2_action_backup = position
         
-        pos = [[i,j] for i in range(17) for j in range(17) if env.board[i][j]==player]
-        
-        if(position == 2):
-            env.board[pos[0][0]][pos[0][1]] = 0
-            env.board[pos[0][0]][pos[0][1] + 2] = player
-        elif(position == 6):
-            env.board[pos[0][0]][pos[0][1]] = 0
-            env.board[pos[0][0]][pos[0][1] - 2] = player
-        elif(position == 0):
-            env.board[pos[0][0]][pos[0][1]] = 0
-            env.board[pos[0][0] -2][pos[0][1]] = player
-        elif(position == 4):
-            env.board[pos[0][0]][pos[0][1]] = 0
-            env.board[pos[0][0] +2][pos[0][1]] = player
-            
+        env.move(player)    
         env.end_check(player)
 
         if env.done == True:

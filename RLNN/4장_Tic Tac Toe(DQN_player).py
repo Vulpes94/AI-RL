@@ -268,7 +268,7 @@ class DQN_player():
         if self.print:
             print("{} : self.epsilon".format(self.epsilon))
             print("{} : greedy_action".format(greedy_action))
-            print("{} : qvalue = {}".format(available_state_qvalues[greedy_action]))
+            print("{} : qvalue".format(available_state_qvalues[greedy_action]))
         
         # max Q-value와 같은 값이 여러개 있는지 확인한 후 double_check에 상태를 저장
         double_check = (np.where(qvalues == np.max(available_state[greedy_action]),1,0))
@@ -324,7 +324,7 @@ class DQN_player():
             print("-----------   learn_qtable start -------------")
             print("{} : board_backup".format(board_backup))
             print("{} : action_backup".format(action_backup))
-            print("{} : reward = {}".format(reward))
+            print("{} : reward".format(reward))
             
         if env.done == True:
             if reward == 1:
@@ -346,7 +346,7 @@ class DQN_player():
                 after_action_value = copy.deepcopy(self.main_network.predict(x)[0,:])
                 delta = after_action_value - before_action_value
                 print("{} : before_action_value id = {}".format(np.round(before_action_value,3),id(before_action_value)))
-                print("{} : target_action_value id = {}".format(np.round(target_action_value,3),id(target_action_value)))
+                # print("{} : target_action_value id = {}".format(np.round(target_action_value,3),id(target_action_value)))
                 print("{} : after_action_value id = {}".format(np.round(after_action_value,3),id(after_action_value)))
                 print("{} : delta action value".format(np.round(delta,3)))
                 state = ((0,0,0,0,0,0,0,0,0))
@@ -414,7 +414,7 @@ np.random.seed(0)
 
 p1_DQN = DQN_player()
 
-print_opt = False
+print_opt = True
 p1_DQN.print = print_opt
 p1_DQN.print1 = print_opt
 

@@ -23,10 +23,9 @@ from tqdm import tqdm
 import copy
 
 from keras.models import Sequential
-from tensorflow.keras.optimizers import SGD
+from tensorflow.keras.optimizers import Adam
 from keras import metrics
 from keras.layers import Dense, Flatten, Conv2D
-from keras.models import load_model
 
 
 # -
@@ -73,9 +72,9 @@ class Environment():
             self.board[pos[0][0] +4][pos[0][1]] = player
         elif(position == 11):
             self.board[pos[0][0]][pos[0][1]] = 0
-            self.board[pos[0][0]][pos[0][1] -4] = player    
+            self.board[pos[0][0]][pos[0][1] -4] = player
         
-    # 현재 보드 상태에서 가능한 행동(최대 136)을 탐색하고 리스트로 반환
+    # 현재 보드 상태에서 가능한 행동(최대 140)을 탐색하고 리스트로 반환
     # 벽 관련 스크립트 추가 필요
     def get_action(self,player,wallCount):
         observation = []
@@ -193,18 +192,16 @@ class DQN_player():
         self.learning_rate = 0.1
         self.gamma=0.9
         
+        self.wallCount = 10
+        
         # 두개의 신경망을 생성
         self.main_network = self.make_network()
         self.target_network = self.make_network()
         # 메인 신경망의 가중치를 타깃 신경망의 가중치로 복사
         self.copy_network()
-
-        self.count = np.zeros(136)
-        self.win = np.zeros(136)
-        self.begin = 0
         
         self.print = False
-        self.wallCount = 10
+
     
     # 신경망 생성
     def make_network(self):
@@ -218,9 +215,9 @@ class DQN_player():
         self.model.add(Dense(256, activation='tanh'))
         self.model.add(Dense(128, activation='tanh'))
         self.model.add(Dense(64, activation='tanh'))
-        self.model.add(Dense(136))
+        self.model.add(Dense(140))
         
-        self.model.compile(optimizer = SGD(learning_rate=0.01), loss = 'mean_squared_error', metrics=['mse'])
+        self.model.compile(optimizer = Adam(), loss = 'mean_squared_error', metrics=['mse'])
         
         return self.model
 
@@ -308,17 +305,12 @@ class DQN_player():
                 if pr[i] < 0:
                     print("{} : - pr".format(np.round(pr[i],2)))
 
-        action = np.random.choice(range(0,len(available_state)), p=pr)        
+        action = np.random.choice(range(0,len(available_state)), p=pr)
         
         if self.print:
             print("{} : pr".format(np.round(pr,2)))
-            print("{} : action".format(action))
             print("{} : state[action]".format(available_state[action]))
             print("-----------   policy end -------------")
-
-        if len(available_state) == 136:
-            self.count[action] +=1
-            self.begin = action
             
         return available_state[action]
         
@@ -338,13 +330,9 @@ class DQN_player():
             print("{} : reward.".format(reward))
     
         if env.done == True:
-            if reward == 1:
-                self.win[self.begin] += 1
-
             if self.print:
                 print("{} : delta".format(delta))
                 print("{} : before update : actions[action_backup]".format(np.round(qvalues[action_backup],3)))
-                print("1  : new_qvalue")
             
             # 게임이 좀료됐을때 신경망의 학습을 위한 정답 데이터를 생성
             qvalues[action_backup] = reward
@@ -419,8 +407,6 @@ class DQN_player():
 # ## Train
 
 # +
-np.random.seed(0)
-
 p1_DQN = DQN_player()
 p2_DQN = DQN_player()
 
@@ -430,7 +416,7 @@ p2_DQN.print = False
 p1_score = 0
 p2_score = 0
 
-max_learn = 20
+max_learn = 200
 
 print("p1 player is {}".format(p1_DQN.name))
 print("p2 player is {}".format(p2_DQN.name))

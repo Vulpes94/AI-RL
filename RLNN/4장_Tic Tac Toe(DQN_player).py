@@ -496,7 +496,7 @@ print("end learn")
 p1_DQN.save_network("p1_DQN_0708")
 
 # + [markdown] id="QrpiODrYk3O-"
-# ##게임 진행
+# ## 게임 진행
 
 # + id="qGcNM7NPjLTp"
 # p1 = Human_player()

@@ -27,6 +27,8 @@ from tensorflow.keras.optimizers import Adam
 from keras import metrics
 from keras.layers import Dense, Flatten, Conv2D
 
+from path import astar
+
 
 # -
 
@@ -41,8 +43,9 @@ class Environment():
         self.reward = 0
         self.winner = 0
         self.wall = -1
+        self.print = False
         
-    def move(self,player):
+    def move(self,player,position,agent):
         pos = [[i,j] for i in range(17) for j in range(17) if self.board[i][j]==player]
         
         # 보드에 플레이어의 선택을 표시
@@ -73,9 +76,48 @@ class Environment():
         elif(position == 11):
             self.board[pos[0][0]][pos[0][1]] = 0
             self.board[pos[0][0]][pos[0][1] -4] = player
+        elif(position >= 12 and position <= 75):
+            agent.wallCount += -1
+            if((position-11)%8 != 0):
+                x = int(2 * ((position-11)%8) - 2)
+                y = int(2 * ((position-11)//8) + 1)
+                self.board[x][y] = self.wall
+                self.board[x+1][y] = self.wall
+                self.board[x+2][y] = self.wall
+                if self.print:
+                    print("x : ",x+1,"y : ",y)
+            else:
+                x = 14
+                y = int(2 * ((position-11)//8) -1)
+                self.board[x][y] = self.wall
+                self.board[x+1][y] = self.wall
+                self.board[x+2][y] = self.wall
+                if self.print:
+                    print("x : ",x+1,"y : ",y)
+        elif(position >= 76 and position <= 139):
+            agent.wallCount += -1
+            if((position-75)%8 != 0):
+                x = int(2 * ((position-75)//8) + 1)
+                y = int(2 * ((position-75)%8) - 2)
+                self.board[x][y] = self.wall
+                self.board[x][y+1] = self.wall
+                self.board[x][y+2] = self.wall
+                if self.print:
+                    print("x : ",x,"y : ",y+1)
+            else:
+                x = int(2 * ((position-75)//8) -1)
+                y = 14
+                self.board[x][y] = self.wall
+                self.board[x][y+1] = self.wall
+                self.board[x][y+2] = self.wall
+                if self.print:
+                    print("x : ",x,"y : ",y+1)
+        
+        if self.print:
+            print("player : ",player,"position : ",position)
+            self.print_board()
         
     # 현재 보드 상태에서 가능한 행동(최대 140)을 탐색하고 리스트로 반환
-    # 벽 관련 스크립트 추가 필요
     def get_action(self,player,wallCount):
         observation = []
         pos = [[i,j] for i in range(17) for j in range(17) if self.board[i][j]==player]
@@ -87,7 +129,7 @@ class Environment():
         
         N = 0 ;NE = 1 ;E = 2 ;SE = 3
         S = 4 ;SW = 5 ;W = 6 ;NW = 7
-        NN = 8;EE = 9;SS=10;WW=11  
+        NN = 8;EE = 9;SS=10;WW=11
         
         # 동쪽 이동 (도착지가 보드를 이탈하지 않고 이동경로에 벽이 없을 때)
         if (east <= 16 and self.board[pos[0][0]][east - 1] != self.wall):
@@ -164,9 +206,72 @@ class Environment():
                     if (east <= 16 and self.board[south][east - 1] != self.wall):
                         if SE not in observation:
                             observation.append(SE)
-                            
-        return observation
+        
+        if(wallCount > 0):
+            for i in range(1,len(self.board),2):
+                for j in range(1,len(self.board[len(self.board)-1]),2):
+                    if(self.board[i][j] == 0):
+                        if(self.board[i-1][j] == 0 and self.board[i+1][j] == 0):
+                            if (self.astarTest((i-1),j)):
+                                x = (i-1)/2 + 1 + 8* ((j-1)/2) +11
+                                observation.append(int(x)) 
+                        if(self.board[i][j-1] == 0 and self.board[i][j+1] == 0):
+                            if(self.astarTest(i,(j-1))):
+                                x = (j-1)/2 + 1 + 8* ((i-1)/2) +64 +11
+                                observation.append(int(x))
+        
+        return sorted(observation)
     
+    def astarTest(self,i,j):
+        mat = copy.deepcopy(self.board)
+        
+        # mat에 벽 설치 해보기
+        if(i%2==0 and j%2==1):
+            mat[i][j] = -1 ;mat[i+1][j] = -1; mat[i+2][j] = -1
+        elif(i%2==1 and j%2==0):
+            mat[i][j] = -1 ;mat[i][j+1] = -1; mat[i][j+2] = -1
+            
+        # 벽 2개 나란히 세웠을 때 틈새 막기
+        for i in range(1,len(mat),2):
+            for j in range(1,len(mat[len(mat)-1]),2):
+                if ((mat[i][j - 1] == self.wall and mat[i][j + 1] == self.wall) or 
+                    (mat[i - 1][j] == self.wall and mat[i + 1][j] == self.wall)):
+                  mat[i][j] = self.wall
+
+        p1_pos = [[i,j] for i in range(17) for j in range(17) if self.board[i][j]==1]
+        p1_start = p1_pos[0]
+        s_path_p1 = False
+        
+        p2_pos = [[i,j] for i in range(17) for j in range(17) if self.board[i][j]==2]
+        p2_start = p2_pos[0]
+        s_path_p2 = False
+        
+        # mat에 표시되어 있는 플레이어 제거
+        mat[p1_pos[0][0]][p1_pos[0][1]] = 0
+        mat[p2_pos[0][0]][p2_pos[0][1]] = 0
+        
+        end_array = [0,2,4,6,8,10,12,14,16]
+
+
+        for i in range(len(end_array)):
+            path = astar(mat, p1_start, (0,end_array[i]))
+            if (path != None):
+                s_path_p1 = True
+                break
+
+        for i in range(len(end_array)):
+            path = astar(mat, p2_start, (16,end_array[i]))
+            if (path != None):
+                s_path_p2 = True
+                break
+                
+        if (s_path_p1 == True and s_path_p2 == True):
+            # 길을 막지 않음
+            return True
+        else: 
+            # 길을 막음
+            return False
+        
     def end_check(self,player):
         # 상단에 플레이어 2, 하단에 플레이어 1 setting
         end_condition = [0,2,4,6,8,10,12,14,16]
@@ -177,7 +282,7 @@ class Environment():
                 return
     
     def print_board(self):
-        for i in board:
+        for i in self.board:
             for j in i:
                 print(j, end=' ')
             print()
@@ -424,9 +529,14 @@ print("p2 player is {}".format(p2_DQN.name))
 for j in tqdm(range(max_learn)):
     np.random.seed(j)
     env = Environment()
+    env.print = False
     # 상단에 플레이어 2, 하단에 플레이어 1 setting
     env.board[0][8] = 2
     env.board[16][8] = 1
+    # 벽 사용 가능 수 다시 복원
+    p1_DQN.wallCount = 10
+    p2_DQN.wallCount = 10
+    
         
     # 시작할 때 메인 신경망의 가중치를 타깃 신경망의 가중치로 복사
     p1_DQN.epsilon = 0.7
@@ -443,10 +553,10 @@ for j in tqdm(range(max_learn)):
         p1_board_backup = tuple(env.board)
         p1_action_backup = position
         
-        env.move(player)
+        env.move(player,position,p1_DQN)
         env.end_check(player)
 
-    # 게임 종료라면
+        # 게임 종료라면
         if env.done == True:
             # p1의 승리이므로 마지막 행동에 보상 +1
             # p2는 마지막 행동에 보상 -1
@@ -462,7 +572,7 @@ for j in tqdm(range(max_learn)):
         p2_board_backup = tuple(env.board)
         p2_action_backup = position
         
-        env.move(player)    
+        env.move(player,position,p2_DQN)
         env.end_check(player)
 
         if env.done == True:

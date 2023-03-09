@@ -23,7 +23,7 @@ from tqdm import tqdm
 import copy
 
 from keras.models import Sequential
-from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.optimizers import SGD
 from keras import metrics
 from keras.layers import Dense, Flatten, Conv2D
 
@@ -322,7 +322,7 @@ class DQN_player():
         self.model.add(Dense(64, activation='tanh'))
         self.model.add(Dense(140))
         
-        self.model.compile(optimizer = Adam(), loss = 'mean_squared_error', metrics=['mse'])
+        self.model.compile(optimizer = SGD(learning_rate=0.01), loss = 'mean_squared_error', metrics=['mse'])
         
         return self.model
 
@@ -521,7 +521,7 @@ p2_DQN.print = False
 p1_score = 0
 p2_score = 0
 
-max_learn = 200
+max_learn = 20
 
 print("p1 player is {}".format(p1_DQN.name))
 print("p2 player is {}".format(p2_DQN.name))
@@ -591,10 +591,9 @@ for j in tqdm(range(max_learn)):
     if j%5 == 0:
         p1_DQN.copy_network()
         p2_DQN.copy_network()
+        p1_DQN.save_network("Q-P1-" + str(j))
+        p2_DQN.save_network("Q-P2-" + str(j))
 
 print("p1 = {} p2 = {}".format(p1_score, p2_score))
 print("end learn")
-
-p1_DQN.save_network("Q-P1")
-p2_DQN.save_network("Q-P2")
 

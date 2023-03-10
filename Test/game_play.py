@@ -19,6 +19,7 @@ from Quoridor import Environment,DQN_player
 
 class Human_player():
     def __init__(self):
+        self.name = "Human_player"
         self.wallCount = 10
     
     def policy(self,env, player):
@@ -43,7 +44,7 @@ class Human_player():
 # +
 p2 = DQN_player()
 p2.epsilon = 0
-p2.load_weights('.h5')
+p2.load_weights('Q-p1-15.h5')
 
 p1 = Human_player()
 

@@ -329,6 +329,9 @@ class DQN_player():
     # 신경망 복사
     def copy_network(self):
          self.target_network.set_weights(self.main_network.get_weights())
+    
+    def load_weights(self,model):
+        self.model.load_weights(model)
 
     def save_network(self,name):
         filename = name + '.h5'
@@ -420,7 +423,7 @@ class DQN_player():
         return available_state[action]
         
         
-    def learn_dqn(self,board_backup, action_backup, env, reward):
+    def learn_dqn(self,board_backup, action_backup, env, reward, player):
         # 입력을 3차원으로 변환한 후, 메인 신경망으로 q-value를 계산
         new_state = self.state_convert(board_backup)
         x = np.array([new_state],dtype=np.float32).astype(np.float32)
@@ -511,89 +514,94 @@ class DQN_player():
 
 # ## Train
 
-# +
-p1_DQN = DQN_player()
-p2_DQN = DQN_player()
+def main():
+    p1_DQN = DQN_player()
+    p2_DQN = DQN_player()
 
-p1_DQN.print = False
-p2_DQN.print = False
+    p1_DQN.print = False
+    p2_DQN.print = False
 
-p1_score = 0
-p2_score = 0
+    p1_score = 0
+    p2_score = 0
 
-max_learn = 20
+    max_learn = 20
 
-print("p1 player is {}".format(p1_DQN.name))
-print("p2 player is {}".format(p2_DQN.name))
+    print("p1 player is {}".format(p1_DQN.name))
+    print("p2 player is {}".format(p2_DQN.name))
 
-for j in tqdm(range(max_learn)):
-    np.random.seed(j)
-    env = Environment()
-    env.print = False
-    # 상단에 플레이어 2, 하단에 플레이어 1 setting
-    env.board[0][8] = 2
-    env.board[16][8] = 1
-    # 벽 사용 가능 수 다시 복원
-    p1_DQN.wallCount = 10
-    p2_DQN.wallCount = 10
-    
-        
-    # 시작할 때 메인 신경망의 가중치를 타깃 신경망의 가중치로 복사
-    p1_DQN.epsilon = 0.7
-    p1_DQN.copy_network()
-    
-    p2_DQN.epsilon = 0.7
-    p2_DQN.copy_network()
-    
-    for i in range(10000):
-        # p1 행동을 선택
-        player = 1
-        position = p1_DQN.policy(env, player)
+    # p1_DQN.load_weights('./Q-P1-10.h5')
+    # p2_DQN.load_weights('./Q-P2-10.h5')
 
-        p1_board_backup = tuple(env.board)
-        p1_action_backup = position
-        
-        env.move(player,position,p1_DQN)
-        env.end_check(player)
+    for j in tqdm(range(max_learn)):
+        np.random.seed(j)
+        env = Environment()
+        env.print = False
+        # 상단에 플레이어 2, 하단에 플레이어 1 setting
+        env.board[0][8] = 2
+        env.board[16][8] = 1
+        # 벽 사용 가능 수 다시 복원
+        p1_DQN.wallCount = 10
+        p2_DQN.wallCount = 10
 
-        # 게임 종료라면
-        if env.done == True:
-            # p1의 승리이므로 마지막 행동에 보상 +1
-            # p2는 마지막 행동에 보상 -1
-            p1_DQN.learn_dqn(p1_board_backup, p1_action_backup, env, 1)
-            p2_DQN.learn_dqn(p2_board_backup, p2_action_backup, env, -1)
-            p1_score += 1
-            break
 
-        # p2 행동을 선택
-        player = 2
-        position = p2_DQN.policy(env,player)
-
-        p2_board_backup = tuple(env.board)
-        p2_action_backup = position
-        
-        env.move(player,position,p2_DQN)
-        env.end_check(player)
-
-        if env.done == True:
-            # p2승리 = p1 패배 마지막 행동에 보상 -1
-            # 지면 보상 : -1
-            p1_DQN.learn_dqn(p1_board_backup, p1_action_backup, env, -1)
-            p2_DQN.learn_dqn(p2_board_backup, p2_action_backup, env, 1)
-            p2_score += 1
-            break
-
-        # 게임이 끝나지 않았다면 p1의 Q-talble 학습
-        p1_DQN.learn_dqn(p1_board_backup, p1_action_backup, env, 0)
-        p2_DQN.learn_dqn(p2_board_backup, p2_action_backup, env, 0)
-
-    # 5게임마다 메인 신경망의 가중치를 타깃 신경망의 가중치로 복사
-    if j%5 == 0:
+        # 시작할 때 메인 신경망의 가중치를 타깃 신경망의 가중치로 복사
+        p1_DQN.epsilon = 0.7
         p1_DQN.copy_network()
+
+        p2_DQN.epsilon = 0.7
         p2_DQN.copy_network()
-        p1_DQN.save_network("Q-P1-" + str(j))
-        p2_DQN.save_network("Q-P2-" + str(j))
 
-print("p1 = {} p2 = {}".format(p1_score, p2_score))
-print("end learn")
+        for i in range(10000):
+            # p1 행동을 선택
+            player = 1
+            position = p1_DQN.policy(env, player)
 
+            p1_board_backup = tuple(env.board)
+            p1_action_backup = position
+
+            env.move(player,position,p1_DQN)
+            env.end_check(player)
+
+            # 게임 종료라면
+            if env.done == True:
+                # p1의 승리이므로 마지막 행동에 보상 +1
+                # p2는 마지막 행동에 보상 -1
+                p1_DQN.learn_dqn(p1_board_backup, p1_action_backup, env, 1,1)
+                p2_DQN.learn_dqn(p2_board_backup, p2_action_backup, env, -1,2)
+                p1_score += 1
+                break
+
+            # p2 행동을 선택
+            player = 2
+            position = p2_DQN.policy(env,player)
+
+            p2_board_backup = tuple(env.board)
+            p2_action_backup = position
+
+            env.move(player,position,p2_DQN)
+            env.end_check(player)
+
+            if env.done == True:
+                # p2승리 = p1 패배 마지막 행동에 보상 -1
+                # 지면 보상 : -1
+                p1_DQN.learn_dqn(p1_board_backup, p1_action_backup, env, -1,1)
+                p2_DQN.learn_dqn(p2_board_backup, p2_action_backup, env, 1,2)
+                p2_score += 1
+                break
+
+            # 게임이 끝나지 않았다면 p1의 Q-talble 학습
+            p1_DQN.learn_dqn(p1_board_backup, p1_action_backup, env, 0,1)
+            p2_DQN.learn_dqn(p2_board_backup, p2_action_backup, env, 0,2)
+
+        # 5게임마다 메인 신경망의 가중치를 타깃 신경망의 가중치로 복사
+        if j%5 == 0:
+            p1_DQN.copy_network()
+            p2_DQN.copy_network()
+            p1_DQN.save_network("Q-P1-" + str(j))
+            p2_DQN.save_network("Q-P2-" + str(j))
+
+    print("p1 = {} p2 = {}".format(p1_score, p2_score))
+    print("end learn")
+
+if __name__ == '__main__':
+    main()

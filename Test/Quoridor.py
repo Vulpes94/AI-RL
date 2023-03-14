@@ -44,43 +44,49 @@ class Environment():
         self.winner = 0
         self.wall = -1
         self.print = False
+        self.player1wallcount = 10
+        self.player2wallcount = 10
         
-    def move(self,player,position,agent):
+    def move(self,player,action):
         pos = [[i,j] for i in range(17) for j in range(17) if self.board[i][j]==player]
         
         # 보드에 플레이어의 선택을 표시
-        if(position == 0):
+        if(action == 0):
             self.board[pos[0][0]][pos[0][1]] = 0
             self.board[pos[0][0] -2][pos[0][1]] = player
-        elif(position == 1):
+        elif(action == 1):
             self.board[pos[0][0]][pos[0][1]] = 0
             self.board[pos[0][0] -2][pos[0][1] +2] = player
-        elif(position == 2):
+        elif(action == 2):
             self.board[pos[0][0]][pos[0][1]] = 0
             self.board[pos[0][0]][pos[0][1] + 2] = player
-        elif(position == 4):
+        elif(action == 4):
             self.board[pos[0][0]][pos[0][1]] = 0
             self.board[pos[0][0] +2][pos[0][1]] = player
-        elif(position == 6):
+        elif(action == 6):
             self.board[pos[0][0]][pos[0][1]] = 0
             self.board[pos[0][0]][pos[0][1] - 2] = player
-        elif(position == 8):
+        elif(action == 8):
             self.board[pos[0][0]][pos[0][1]] = 0
             self.board[pos[0][0] -4][pos[0][1]] = player
-        elif(position == 9):
+        elif(action == 9):
             self.board[pos[0][0]][pos[0][1]] = 0
             self.board[pos[0][0]][pos[0][1] + 4] = player
-        elif(position == 10):
+        elif(action == 10):
             self.board[pos[0][0]][pos[0][1]] = 0
             self.board[pos[0][0] +4][pos[0][1]] = player
-        elif(position == 11):
+        elif(action == 11):
             self.board[pos[0][0]][pos[0][1]] = 0
             self.board[pos[0][0]][pos[0][1] -4] = player
-        elif(position >= 12 and position <= 75):
-            agent.wallCount += -1
-            if((position-11)%8 != 0):
-                x = int(2 * ((position-11)%8) - 2)
-                y = int(2 * ((position-11)//8) + 1)
+        elif(action >= 12 and action <= 75):
+            if player==1: 
+                self.player1wallcount += -1
+            else: 
+                self.player2wallcount += -1
+                
+            if((action-11)%8 != 0):
+                x = int(2 * ((action-11)%8) - 2)
+                y = int(2 * ((action-11)//8) + 1)
                 self.board[x][y] = self.wall
                 self.board[x+1][y] = self.wall
                 self.board[x+2][y] = self.wall
@@ -88,24 +94,28 @@ class Environment():
                     print("x : ",x+1,"y : ",y)
             else:
                 x = 14
-                y = int(2 * ((position-11)//8) -1)
+                y = int(2 * ((action-11)//8) -1)
                 self.board[x][y] = self.wall
                 self.board[x+1][y] = self.wall
                 self.board[x+2][y] = self.wall
                 if self.print:
                     print("x : ",x+1,"y : ",y)
-        elif(position >= 76 and position <= 139):
-            agent.wallCount += -1
-            if((position-75)%8 != 0):
-                x = int(2 * ((position-75)//8) + 1)
-                y = int(2 * ((position-75)%8) - 2)
+        elif(action >= 76 and action <= 139):
+            if player==1: 
+                self.player1wallcount += -1
+            else: 
+                self.player2wallcount += -1
+                
+            if((action-75)%8 != 0):
+                x = int(2 * ((action-75)//8) + 1)
+                y = int(2 * ((action-75)%8) - 2)
                 self.board[x][y] = self.wall
                 self.board[x][y+1] = self.wall
                 self.board[x][y+2] = self.wall
                 if self.print:
                     print("x : ",x,"y : ",y+1)
             else:
-                x = int(2 * ((position-75)//8) -1)
+                x = int(2 * ((action-75)//8) -1)
                 y = 14
                 self.board[x][y] = self.wall
                 self.board[x][y+1] = self.wall
@@ -114,11 +124,11 @@ class Environment():
                     print("x : ",x,"y : ",y+1)
         
         if self.print:
-            print("player : ",player,"position : ",position)
+            print("player : ",player,"action : ",action)
             self.print_board()
         
     # 현재 보드 상태에서 가능한 행동(최대 140)을 탐색하고 리스트로 반환
-    def get_action(self,player,wallCount):
+    def get_action(self,player):
         observation = []
         pos = [[i,j] for i in range(17) for j in range(17) if self.board[i][j]==player]
         
@@ -207,7 +217,8 @@ class Environment():
                         if SE not in observation:
                             observation.append(SE)
         
-        if(wallCount > 0):
+        wallcount = self.player1wallcount if player==1 else self.player2wallcount
+        if(wallcount > 0):
             for i in range(1,len(self.board),2):
                 for j in range(1,len(self.board[len(self.board)-1]),2):
                     if(self.board[i][j] == 0):
@@ -297,8 +308,6 @@ class DQN_player():
         self.learning_rate = 0.1
         self.gamma=0.9
         
-        self.wallCount = 10
-        
         # 두개의 신경망을 생성
         self.main_network = self.make_network()
         self.target_network = self.make_network()
@@ -363,7 +372,7 @@ class DQN_player():
             print("----------- policy start -------------")
         
         # 행동 가능한 상태를 저장
-        available_state = env.get_action(player,self.wallCount)
+        available_state = env.get_action(player)
 
         state_3d = self.state_convert(env.board)
         x = np.array([state_3d],dtype=np.float32).astype(np.float32)
@@ -466,7 +475,7 @@ class DQN_player():
             new_state = self.state_convert(env.board)
             next_x = np.array([new_state],dtype=np.float32).astype(np.float32)
             next_qvalues = self.target_network.predict(next_x)[0,:]
-            available_state = env.get_action(player,self.wallCount)
+            available_state = env.get_action(player)
             maxQ = np.max(next_qvalues[available_state])            
             
             if self.print:
@@ -539,9 +548,6 @@ def main():
         # 상단에 플레이어 2, 하단에 플레이어 1 setting
         env.board[0][8] = 2
         env.board[16][8] = 1
-        # 벽 사용 가능 수 다시 복원
-        p1_DQN.wallCount = 10
-        p2_DQN.wallCount = 10
 
 
         # 시작할 때 메인 신경망의 가중치를 타깃 신경망의 가중치로 복사
@@ -554,12 +560,12 @@ def main():
         for i in range(10000):
             # p1 행동을 선택
             player = 1
-            position = p1_DQN.policy(env, player)
+            action = p1_DQN.policy(env, player)
 
             p1_board_backup = tuple(env.board)
-            p1_action_backup = position
+            p1_action_backup = action
 
-            env.move(player,position,p1_DQN)
+            env.move(player,action)
             env.end_check(player)
 
             # 게임 종료라면
@@ -573,12 +579,12 @@ def main():
 
             # p2 행동을 선택
             player = 2
-            position = p2_DQN.policy(env,player)
+            action = p2_DQN.policy(env,player)
 
             p2_board_backup = tuple(env.board)
-            p2_action_backup = position
+            p2_action_backup = action
 
-            env.move(player,position,p2_DQN)
+            env.move(player,action)
             env.end_check(player)
 
             if env.done == True:

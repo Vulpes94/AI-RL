@@ -60,12 +60,21 @@ class Environment():
         elif(action == 2):
             self.board[pos[0][0]][pos[0][1]] = 0
             self.board[pos[0][0]][pos[0][1] + 2] = player
+        elif(action == 3):
+            self.board[pos[0][0]][pos[0][1]] = 0
+            self.board[pos[0][0] + 2][pos[0][1] + 2] = player
         elif(action == 4):
             self.board[pos[0][0]][pos[0][1]] = 0
             self.board[pos[0][0] +2][pos[0][1]] = player
+        elif(action == 5):
+            self.board[pos[0][0]][pos[0][1]] = 0
+            self.board[pos[0][0] + 2][pos[0][1] - 2] = player            
         elif(action == 6):
             self.board[pos[0][0]][pos[0][1]] = 0
             self.board[pos[0][0]][pos[0][1] - 2] = player
+        elif(action == 7):
+            self.board[pos[0][0]][pos[0][1]] = 0
+            self.board[pos[0][0] - 2][pos[0][1] - 2] = player
         elif(action == 8):
             self.board[pos[0][0]][pos[0][1]] = 0
             self.board[pos[0][0] -4][pos[0][1]] = player

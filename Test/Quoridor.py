@@ -329,11 +329,14 @@ class DQN_player():
     # 신경망 생성
     def make_network(self):
         self.model = Sequential()
-        self.model.add(Conv2D(16, (17, 17), padding='same', activation='relu', input_shape=(17,17,3)))
-        self.model.add(Conv2D(32, (17, 17), padding='same', activation='relu'))
-        self.model.add(Conv2D(64, (17, 17), padding='same', activation='relu'))
-        self.model.add(Conv2D(128, (17, 17), padding='same', activation='relu'))
+        self.model.add(Conv2D(256, (17, 17), padding='same', activation='relu', input_shape=(17,17,3)))
+        self.model.add(Conv2D(256, (17, 17), padding='same', activation='relu'))
+        self.model.add(Conv2D(256, (17, 17), padding='same', activation='relu'))
+        self.model.add(Conv2D(256, (17, 17), padding='same', activation='relu'))
+        self.model.add(Conv2D(256, (17, 17), padding='same', activation='relu'))
+        self.model.add(Conv2D(256, (17, 17), padding='same', activation='relu'))
         self.model.add(Flatten())
+        self.model.add(Dense(1024, activation='tanh'))
         self.model.add(Dense(512, activation='tanh'))
         self.model.add(Dense(256, activation='tanh'))
         self.model.add(Dense(128, activation='tanh'))
@@ -464,7 +467,7 @@ class DQN_player():
             qvalues[action_backup] = reward
             y=np.array([qvalues],dtype=np.float32).astype(np.float32)
             # 생성된 정답 데이터로 메인 신경망을 학습
-            self.main_network.fit(x, y, epochs=10, verbose=0)
+            self.main_network.fit(x, y, epochs=10, verbose=2)
             
             if self.print:
                 after_action_value = copy.deepcopy(self.main_network.predict(x)[0,:])
@@ -485,7 +488,7 @@ class DQN_player():
             next_x = np.array([new_state],dtype=np.float32).astype(np.float32)
             next_qvalues = self.target_network.predict(next_x)[0,:]
             available_state = env.get_action(player)
-            maxQ = np.max(next_qvalues[available_state])            
+            maxQ = np.max(next_qvalues[available_state])     
             
             if self.print:
                 print("{} : old_qvalue".format(np.round(before_action_value[action_backup],3)))
@@ -532,6 +535,7 @@ class DQN_player():
 
 # ## Train
 
+# +
 def main():
     p1_DQN = DQN_player()
     p2_DQN = DQN_player()
@@ -617,6 +621,7 @@ def main():
 
     print("p1 = {} p2 = {}".format(p1_score, p2_score))
     print("end learn")
+# -
 
 if __name__ == '__main__':
     main()

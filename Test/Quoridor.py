@@ -304,7 +304,10 @@ class Environment():
     def print_board(self):
         for i in self.board:
             for j in i:
-                print(j, end=' ')
+                if(j == -1):
+                    print('x', end=' ')
+                else:
+                    print(j, end=' ')
             print()
 
 
@@ -535,7 +538,6 @@ class DQN_player():
 
 # ## Train
 
-# +
 def main():
     p1_DQN = DQN_player()
     p2_DQN = DQN_player()
@@ -557,7 +559,7 @@ def main():
     for j in tqdm(range(max_learn)):
         np.random.seed(j)
         env = Environment()
-        env.print = False
+        env.print = True
         # 상단에 플레이어 2, 하단에 플레이어 1 setting
         env.board[0][8] = 2
         env.board[16][8] = 1
@@ -621,7 +623,6 @@ def main():
 
     print("p1 = {} p2 = {}".format(p1_score, p2_score))
     print("end learn")
-# -
 
 if __name__ == '__main__':
     main()

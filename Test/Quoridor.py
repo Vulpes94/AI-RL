@@ -550,13 +550,13 @@ def main():
     p1_score = 0
     p2_score = 0
 
-    max_learn = 20
+    max_learn = 10
 
     print("p1 player is {}".format(p1_DQN.name))
     print("p2 player is {}".format(p2_DQN.name))
 
-    p1_DQN.load_weights('Q-P1-0.h5')
-    p2_DQN.load_weights('Q-P2-0.h5')
+    p1_DQN.load_weights('Q-P1.h5')
+    p2_DQN.load_weights('Q-P2.h5')
 
     for j in tqdm(range(max_learn)):
         np.random.seed(j)
@@ -620,8 +620,9 @@ def main():
         if j%5 == 0:
             p1_DQN.copy_network()
             p2_DQN.copy_network()
-            p1_DQN.save_network("Q-P1-" + str(j))
-            p2_DQN.save_network("Q-P2-" + str(j))
+        
+        p1_DQN.save_network("Q-P1")
+        p2_DQN.save_network("Q-P2")
 
     print("p1 = {} p2 = {}".format(p1_score, p2_score))
     print("end learn")

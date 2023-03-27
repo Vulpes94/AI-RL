@@ -306,6 +306,8 @@ class Environment():
             for j in i:
                 if(j == -1):
                     print('x', end=' ')
+                elif(j == 0):
+                    print('-', end=' ')
                 else:
                     print(j, end=' ')
             print()
@@ -553,8 +555,8 @@ def main():
     print("p1 player is {}".format(p1_DQN.name))
     print("p2 player is {}".format(p2_DQN.name))
 
-    # p1_DQN.load_weights('./Q-P1-10.h5')
-    # p2_DQN.load_weights('./Q-P2-10.h5')
+    p1_DQN.load_weights('Q-P1-0.h5')
+    p2_DQN.load_weights('Q-P2-0.h5')
 
     for j in tqdm(range(max_learn)):
         np.random.seed(j)

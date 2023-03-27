@@ -92,17 +92,16 @@ class Monte_Carlo_player():
             # 무작위로 행동을 선택
             action = np.random.randint(len(available_action))
             self.playout(temp_env,available_action[action],player)
-              
 
 
 # +
-# p2 = DQN_player()
-# p2.epsilon = 0
-# p2.load_weights('Q-p1-5.h5')
+p1 = DQN_player()
+p1.epsilon = 0
+p1.load_weights('Q-p1.h5')
 
-p2 = Monte_Carlo_player()
+# p2 = Monte_Carlo_player()
 
-p1 = Human_player()
+p2 = Human_player()
 
 while True:
     env = Environment()
@@ -113,13 +112,13 @@ while True:
     
     for i in range(10000):
         if(i%2==0):
-            player = 2
-            action = p2.select_action(env, player)
-            env.move(player ,action)
-        else:
             player = 1
             action = p1.select_action(env, player)
             env.move(player,action)
+        else:
+            player = 2
+            action = p2.select_action(env, player)
+            env.move(player ,action)
         
             
         env.end_check(player)

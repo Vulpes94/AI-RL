@@ -50,43 +50,13 @@ class Environment():
     def move(self,player,action):
         pos = [[i,j] for i in range(17) for j in range(17) if self.board[i][j]==player]
         
+        # 방향 정수
+        dxy = ((-2, 0), (-2, 2), (0, 2), (2, 2), (2, 0), (2, -2), (0, -2), (-2, -2), (-4, 0), (0, 4), (4, 0), (0, -4))
+        
         # 보드에 플레이어의 선택을 표시
-        if(action == 0):
+        if(action >= 0 and action <= 11):
             self.board[pos[0][0]][pos[0][1]] = 0
-            self.board[pos[0][0] -2][pos[0][1]] = player
-        elif(action == 1):
-            self.board[pos[0][0]][pos[0][1]] = 0
-            self.board[pos[0][0] -2][pos[0][1] +2] = player
-        elif(action == 2):
-            self.board[pos[0][0]][pos[0][1]] = 0
-            self.board[pos[0][0]][pos[0][1] + 2] = player
-        elif(action == 3):
-            self.board[pos[0][0]][pos[0][1]] = 0
-            self.board[pos[0][0] + 2][pos[0][1] + 2] = player
-        elif(action == 4):
-            self.board[pos[0][0]][pos[0][1]] = 0
-            self.board[pos[0][0] +2][pos[0][1]] = player
-        elif(action == 5):
-            self.board[pos[0][0]][pos[0][1]] = 0
-            self.board[pos[0][0] + 2][pos[0][1] - 2] = player            
-        elif(action == 6):
-            self.board[pos[0][0]][pos[0][1]] = 0
-            self.board[pos[0][0]][pos[0][1] - 2] = player
-        elif(action == 7):
-            self.board[pos[0][0]][pos[0][1]] = 0
-            self.board[pos[0][0] - 2][pos[0][1] - 2] = player
-        elif(action == 8):
-            self.board[pos[0][0]][pos[0][1]] = 0
-            self.board[pos[0][0] -4][pos[0][1]] = player
-        elif(action == 9):
-            self.board[pos[0][0]][pos[0][1]] = 0
-            self.board[pos[0][0]][pos[0][1] + 4] = player
-        elif(action == 10):
-            self.board[pos[0][0]][pos[0][1]] = 0
-            self.board[pos[0][0] +4][pos[0][1]] = player
-        elif(action == 11):
-            self.board[pos[0][0]][pos[0][1]] = 0
-            self.board[pos[0][0]][pos[0][1] -4] = player
+            self.board[pos[0][0] + dxy[action][0]][pos[0][1] + dxy[action][1]] = player
         elif(action >= 12 and action <= 75):
             if player==1: 
                 self.player1wallcount += -1
@@ -141,10 +111,10 @@ class Environment():
         observation = []
         pos = [[i,j] for i in range(17) for j in range(17) if self.board[i][j]==player]
         
-        east = pos[0][1] + 2; eeast = pos[0][1] + 4;
-        west = pos[0][1] - 2; wwest = pos[0][1] - 4;
-        north = pos[0][0] - 2; nnorth = pos[0][0] - 4;
-        south =  pos[0][0]+ 2; ssouth =  pos[0][0] + 4;
+        east = pos[0][1] + 2; eeast = pos[0][1] + 4
+        west = pos[0][1] - 2; wwest = pos[0][1] - 4
+        north = pos[0][0] - 2; nnorth = pos[0][0] - 4
+        south =  pos[0][0]+ 2; ssouth =  pos[0][0] + 4
         
         N = 0 ;NE = 1 ;E = 2 ;SE = 3
         S = 4 ;SW = 5 ;W = 6 ;NW = 7
@@ -550,7 +520,7 @@ def main():
     p1_score = 0
     p2_score = 0
 
-    max_learn = 10
+    max_learn = 30
 
     print("p1 player is {}".format(p1_DQN.name))
     print("p2 player is {}".format(p2_DQN.name))

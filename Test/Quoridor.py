@@ -57,50 +57,36 @@ class Environment():
         if(action >= 0 and action <= 11):
             self.board[pos[0][0]][pos[0][1]] = 0
             self.board[pos[0][0] + dxy[action][0]][pos[0][1] + dxy[action][1]] = player
-        elif(action >= 12 and action <= 75):
+        elif(action >= 12 and action <= 139):
             if player==1: 
                 self.player1wallcount += -1
-            else: 
-                self.player2wallcount += -1
-                
-            if((action-11)%8 != 0):
-                x = int(2 * ((action-11)%8) - 2)
-                y = int(2 * ((action-11)//8) + 1)
-                self.board[x][y] = self.wall
-                self.board[x+1][y] = self.wall
-                self.board[x+2][y] = self.wall
-                if self.print:
-                    print("x : ",x+1,"y : ",y)
             else:
-                x = 14
-                y = int(2 * ((action-11)//8) -1)
-                self.board[x][y] = self.wall
-                self.board[x+1][y] = self.wall
-                self.board[x+2][y] = self.wall
-                if self.print:
-                    print("x : ",x+1,"y : ",y)
-        elif(action >= 76 and action <= 139):
-            if player==1: 
-                self.player1wallcount += -1
-            else: 
                 self.player2wallcount += -1
-                
-            if((action-75)%8 != 0):
-                x = int(2 * ((action-75)//8) + 1)
-                y = int(2 * ((action-75)%8) - 2)
+            
+            if(action-75 > 0):
+                if((action-75)%8 != 0):
+                    x = int(2 * ((action-75)//8) + 1)
+                    y = int(2 * ((action-75)%8) - 2)
+                else:
+                    x = int(2 * ((action-75)//8) -1)
+                    y = 14
                 self.board[x][y] = self.wall
                 self.board[x][y+1] = self.wall
                 self.board[x][y+2] = self.wall
                 if self.print:
                     print("x : ",x,"y : ",y+1)
             else:
-                x = int(2 * ((action-75)//8) -1)
-                y = 14
+                if((action-11)%8 != 0):
+                    x = int(2 * ((action-11)%8) - 2)
+                    y = int(2 * ((action-11)//8) + 1)
+                else:
+                    x = 14
+                    y = int(2 * ((action-11)//8) -1)   
                 self.board[x][y] = self.wall
-                self.board[x][y+1] = self.wall
-                self.board[x][y+2] = self.wall
+                self.board[x+1][y] = self.wall
+                self.board[x+2][y] = self.wall
                 if self.print:
-                    print("x : ",x,"y : ",y+1)
+                    print("x : ",x+1,"y : ",y)
         
         if self.print:
             print("player : ",player,"action : ",action)
@@ -202,17 +188,17 @@ class Environment():
                 for j in range(1,len(self.board[len(self.board)-1]),2):
                     if(self.board[i][j] == 0):
                         if(self.board[i-1][j] == 0 and self.board[i+1][j] == 0):
-                            if (self.astarTest((i-1),j)):
+                            if (self.search_path((i-1),j)):
                                 x = (i-1)/2 + 1 + 8* ((j-1)/2) +11
                                 observation.append(int(x)) 
                         if(self.board[i][j-1] == 0 and self.board[i][j+1] == 0):
-                            if(self.astarTest(i,(j-1))):
+                            if(self.search_path(i,(j-1))):
                                 x = (j-1)/2 + 1 + 8* ((i-1)/2) +64 +11
                                 observation.append(int(x))
         
         return sorted(observation)
     
-    def astarTest(self,i,j):
+    def search_path(self,i,j):
         mat = copy.deepcopy(self.board)
         
         # mat에 벽 설치 해보기
@@ -230,11 +216,11 @@ class Environment():
 
         p1_pos = [[i,j] for i in range(17) for j in range(17) if self.board[i][j]==1]
         p1_start = p1_pos[0]
-        s_path_p1 = False
+        p1_path = False
         
         p2_pos = [[i,j] for i in range(17) for j in range(17) if self.board[i][j]==2]
         p2_start = p2_pos[0]
-        s_path_p2 = False
+        p2_path = False
         
         # mat에 표시되어 있는 플레이어 제거
         mat[p1_pos[0][0]][p1_pos[0][1]] = 0
@@ -242,20 +228,19 @@ class Environment():
         
         end_array = [0,2,4,6,8,10,12,14,16]
 
-
         for i in range(len(end_array)):
             path = astar(mat, p1_start, (0,end_array[i]))
             if (path != None):
-                s_path_p1 = True
+                p1_path = True
                 break
 
         for i in range(len(end_array)):
             path = astar(mat, p2_start, (16,end_array[i]))
             if (path != None):
-                s_path_p2 = True
+                p2_path = True
                 break
                 
-        if (s_path_p1 == True and s_path_p2 == True):
+        if (p1_path == True and p2_path == True):
             # 길을 막지 않음
             return True
         else: 

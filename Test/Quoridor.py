@@ -48,15 +48,15 @@ class Environment():
         self.player2wallcount = 10
         
     def move(self,player,action):
-        pos = [[i,j] for i in range(17) for j in range(17) if self.board[i][j]==player]
+        pos = [[i,j] for i in range(17) for j in range(17) if self.board[i][j]==player][0]
         
         # 방향 정수
         dxy = ((-2, 0), (-2, 2), (0, 2), (2, 2), (2, 0), (2, -2), (0, -2), (-2, -2), (-4, 0), (0, 4), (4, 0), (0, -4))
         
         # 보드에 플레이어의 선택을 표시
         if(action >= 0 and action <= 11):
-            self.board[pos[0][0]][pos[0][1]] = 0
-            self.board[pos[0][0] + dxy[action][0]][pos[0][1] + dxy[action][1]] = player
+            self.board[pos[0]][pos[1]] = 0
+            self.board[pos[0] + dxy[action][0]][pos[1] + dxy[action][1]] = player
         elif(action >= 12 and action <= 139):
             if player==1: 
                 self.player1wallcount += -1
@@ -95,25 +95,25 @@ class Environment():
     # 현재 보드 상태에서 가능한 행동(최대 140)을 탐색하고 리스트로 반환
     def get_action(self,player):
         observation = []
-        pos = [[i,j] for i in range(17) for j in range(17) if self.board[i][j]==player]
+        pos = [[i,j] for i in range(17) for j in range(17) if self.board[i][j]==player][0]
         
-        east = pos[0][1] + 2; eeast = pos[0][1] + 4
-        west = pos[0][1] - 2; wwest = pos[0][1] - 4
-        north = pos[0][0] - 2; nnorth = pos[0][0] - 4
-        south =  pos[0][0]+ 2; ssouth =  pos[0][0] + 4
+        east = pos[1] + 2; eeast = pos[1] + 4
+        west = pos[1] - 2; wwest = pos[1] - 4
+        north = pos[0] - 2; nnorth = pos[0] - 4
+        south =  pos[0]+ 2; ssouth =  pos[0] + 4
         
         N = 0 ;NE = 1 ;E = 2 ;SE = 3
         S = 4 ;SW = 5 ;W = 6 ;NW = 7
         NN = 8;EE = 9;SS=10;WW=11
         
         # 동쪽 이동 (도착지가 보드를 이탈하지 않고 이동경로에 벽이 없을 때)
-        if (east <= 16 and self.board[pos[0][0]][east - 1] != self.wall):
-            if (self.board[pos[0][0]][east] == 0):
+        if (east <= 16 and self.board[pos[0]][east - 1] != self.wall):
+            if (self.board[pos[0]][east] == 0):
                 observation.append(E)
             # 동쪽에 플레이어가 있을 때
             else:
                 # 동쪽 두칸 이동 (도착지가 보드를 이탈하지 않고 이동경로에 벽에 없을 때)
-                if (eeast <= 16 and self.board[pos[0][0]][eeast - 1] != self.wall):
+                if (eeast <= 16 and self.board[pos[0]][eeast - 1] != self.wall):
                     observation.append(EE)
                 else:
                     # 대각선(북동) 이동 (도착지의 북쪽이 보드를 이탈하지 않고 이동경로에 벽이 없을 때)
@@ -125,13 +125,13 @@ class Environment():
                       observation.append(SE)
                 
         # 서쪽 이동 (도착지가 보드를 이탈하지 않고 이동경로에 벽이 없을 때)
-        if (west >= 0 and self.board[pos[0][0]][west + 1] != self.wall):
-            if (self.board[pos[0][0]][west] == 0):
+        if (west >= 0 and self.board[pos[0]][west + 1] != self.wall):
+            if (self.board[pos[0]][west] == 0):
                 observation.append(W)
             # 서쪽에 플레이어가 있을 때
             else:
                 # 서쪽 두칸 이동 (도착지가 보드를 이탈하지 않고 이동경로에 벽에 없을 때)
-                if (wwest >= 0 and self.board[pos[0][0]][wwest + 1] != self.wall):
+                if (wwest >= 0 and self.board[pos[0]][wwest + 1] != self.wall):
                     observation.append(WW)
                 else:
                     # 대각선(북서) 이동 (도착지의 북쪽이 보드를 이탈하지 않고 이동경로에 벽이 없을 때)
@@ -143,13 +143,13 @@ class Environment():
                       observation.append(SW)     
 
         # 북쪽 이동 (도착지가 보드를 이탈하지 않고 이동경로에 벽이 없을 때)
-        if (north >= 0 and self.board[north + 1][pos[0][1]] != self.wall):
-            if (self.board[north][pos[0][1]] == 0):
+        if (north >= 0 and self.board[north + 1][pos[1]] != self.wall):
+            if (self.board[north][pos[1]] == 0):
                 observation.append(N)
             # 북쪽에 플레이어가 있을 때
             else:
                 # 북쪽 두칸 이동 (도착지가 보드를 이탈하지 않고 이동경로에 벽에 없을 때)
-                if (nnorth >= 0 and self.board[nnorth + 1][pos[0][1]] != self.wall):
+                if (nnorth >= 0 and self.board[nnorth + 1][pos[1]] != self.wall):
                     observation.append(NN)
                 else:
                     # 대각선(북서) 이동 (도착지의 서쪽이 보드를 이탈하지 않고 이동경로에 벽이 없을 때)
@@ -163,13 +163,13 @@ class Environment():
                             observation.append(NE)
 
         # 남쪽 이동 (도착지가 보드를 이탈하지 않고 이동경로에 벽이 없을 때)
-        if (south <= 16 and self.board[south - 1][pos[0][1]] != self.wall):
-            if (self.board[south][pos[0][1]] == 0):
+        if (south <= 16 and self.board[south - 1][pos[1]] != self.wall):
+            if (self.board[south][pos[1]] == 0):
                 observation.append(S)
             # 남쪽에 플레이어가 있을 때
             else:
                 # 남쪽 두칸 이동 (도착지가 보드를 이탈하지 않고 이동경로에 벽에 없을 때)
-                if (ssouth <= 16 and self.board[ssouth - 1][pos[0][1]] != self.wall):
+                if (ssouth <= 16 and self.board[ssouth - 1][pos[1]] != self.wall):
                     observation.append(SS)
                 else:
                     # 대각선(남서) 이동 (도착지의 서쪽이 보드를 이탈하지 않고 이동경로에 벽이 없을 때)
@@ -214,28 +214,26 @@ class Environment():
                     (mat[i - 1][j] == self.wall and mat[i + 1][j] == self.wall)):
                   mat[i][j] = self.wall
 
-        p1_pos = [[i,j] for i in range(17) for j in range(17) if self.board[i][j]==1]
-        p1_start = p1_pos[0]
+        p1_pos = [[i,j] for i in range(17) for j in range(17) if self.board[i][j]==1][0]
         p1_path = False
         
-        p2_pos = [[i,j] for i in range(17) for j in range(17) if self.board[i][j]==2]
-        p2_start = p2_pos[0]
+        p2_pos = [[i,j] for i in range(17) for j in range(17) if self.board[i][j]==2][0]
         p2_path = False
         
         # mat에 표시되어 있는 플레이어 제거
-        mat[p1_pos[0][0]][p1_pos[0][1]] = 0
-        mat[p2_pos[0][0]][p2_pos[0][1]] = 0
+        mat[p1_pos[0]][p1_pos[1]] = 0
+        mat[p2_pos[0]][p2_pos[1]] = 0
         
         end_array = [0,2,4,6,8,10,12,14,16]
 
         for i in range(len(end_array)):
-            path = astar(mat, p1_start, (0,end_array[i]))
+            path = astar(mat, p1_pos, (0,end_array[i]))
             if (path != None):
                 p1_path = True
                 break
 
         for i in range(len(end_array)):
-            path = astar(mat, p2_start, (16,end_array[i]))
+            path = astar(mat, p2_pos, (16,end_array[i]))
             if (path != None):
                 p2_path = True
                 break
@@ -257,14 +255,19 @@ class Environment():
                 return
     
     def print_board(self):
-        for i in self.board:
-            for j in i:
-                if(j == -1):
+        print("p1wall : ",self.player1wallcount,"p2wall : ",self.player2wallcount)
+        for i, row in enumerate(self.board):
+            for j, col in enumerate(row):
+                if col == -1:
                     print('x', end=' ')
-                elif(j == 0):
-                    print('-', end=' ')
+                elif col == 0 and i%2==0 and j%2==0:
+                    print('\u00B7', end=' ')
+                elif col == 1:
+                    print('\u265F', end=' ')
+                elif col == 2:
+                    print('\u2659', end=' ')
                 else:
-                    print(j, end=' ')
+                    print(' ', end=' ')
             print()
 
 

@@ -127,11 +127,11 @@ def state_value_function(env,agent,G,max_step,now_step):
     # 1. 감가율 설정
     gamma = 0.9
 
-# 2. 현재 위치가 도착지점인지 확인
+    # 2. 현재 위치가 도착지점인지 확인
     if env.reward_list1[agent.pos[0]][agent.pos[1]] == "goal":
         return env.goal
 
-# 3. 마지막 상태는 보상만 계산
+    # 3. 마지막 상태는 보상만 계산
     if (max_step == now_step):
         pos1 = agent.get_pos()
         

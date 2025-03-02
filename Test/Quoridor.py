@@ -20,7 +20,6 @@
 # +
 import numpy as np
 from tqdm import tqdm
-import copy
 
 from keras.models import Sequential
 from tensorflow.keras.optimizers import SGD
@@ -36,8 +35,8 @@ from path import astar
 
 class Environment():
     def __init__(self):
-    # 보드는 0으로 초기화된 17x17개의 배열 준비
-    # 게임종료 : done = True
+        # 보드는 0으로 초기화된 17x17개의 배열 준비
+        # 게임종료 : done = True
         self.board = [[0 for j in range(17)] for i in range(17)]
         self.done = False
         self.reward = 0
@@ -62,31 +61,34 @@ class Environment():
                 self.player1wallcount += -1
             else:
                 self.player2wallcount += -1
-            
-            if(action-75 > 0):
-                if((action-75)%8 != 0):
-                    x = int(2 * ((action-75)//8) + 1)
-                    y = int(2 * ((action-75)%8) - 2)
-                else:
-                    x = int(2 * ((action-75)//8) -1)
-                    y = 14
-                self.board[x][y] = self.wall
-                self.board[x][y+1] = self.wall
-                self.board[x][y+2] = self.wall
+
+            is_horizontal_wall = action > 75
+            action -= 75 if is_horizontal_wall else 11
+
+            quotient = action // 8
+            remainder = action % 8
+
+            row = 2 * quotient + 1 if remainder != 0 else 2 * quotient - 1
+            col = 2 * remainder - 2 if remainder != 0 else 14
+
+            # H(가로)의 벽
+            if is_horizontal_wall:
+                self.board[row][col] = self.wall
+                self.board[row][col+1] = self.wall
+                self.board[row][col+2] = self.wall
+                
                 if self.print:
-                    print("x : ",x,"y : ",y+1)
+                    print("row : ",row,"col : ",col+1)
+
+            # V(세로)의 벽
             else:
-                if((action-11)%8 != 0):
-                    x = int(2 * ((action-11)%8) - 2)
-                    y = int(2 * ((action-11)//8) + 1)
-                else:
-                    x = 14
-                    y = int(2 * ((action-11)//8) -1)   
-                self.board[x][y] = self.wall
-                self.board[x+1][y] = self.wall
-                self.board[x+2][y] = self.wall
+                row, col = col, row
+                self.board[row][col] = self.wall
+                self.board[row+1][col] = self.wall
+                self.board[row+2][col] = self.wall
+                
                 if self.print:
-                    print("x : ",x+1,"y : ",y)
+                    print("row : ",row+1,"col : ",col)
         
         if self.print:
             print("player : ",player,"action : ",action)
@@ -199,8 +201,8 @@ class Environment():
         return sorted(observation)
     
     def search_path(self,i,j):
-        mat = copy.deepcopy(self.board)
-        
+        mat = [item[:] for item in self.board]
+
         # mat에 벽 설치 해보기
         if(i%2==0 and j%2==1):
             mat[i][j] = -1 ;mat[i+1][j] = -1; mat[i+2][j] = -1
@@ -263,9 +265,9 @@ class Environment():
                 elif col == 0 and i%2==0 and j%2==0:
                     print('\u00B7', end=' ')
                 elif col == 1:
-                    print('\u265F', end=' ')
-                elif col == 2:
                     print('\u2659', end=' ')
+                elif col == 2:
+                    print('\u265F', end=' ')
                 else:
                     print(' ', end=' ')
             print()
@@ -412,7 +414,7 @@ class DQN_player():
         new_state = self.state_convert(board_backup)
         x = np.array([new_state],dtype=np.float32).astype(np.float32)
         qvalues = self.main_network.predict(x)[0,:]
-        before_action_value = copy.deepcopy(qvalues)
+        before_action_value = [x for x in qvalues]
         delta = 0
         
         if self.print:
@@ -433,7 +435,7 @@ class DQN_player():
             self.main_network.fit(x, y, epochs=10, verbose=2)
             
             if self.print:
-                after_action_value = copy.deepcopy(self.main_network.predict(x)[0,:])
+                after_action_value = [x for x in self.main_network.predict(x)[0,:]]
                 delta = after_action_value - before_action_value
                 print("{} : before_action_value id = {}".format(np.round(before_action_value,3),id(before_action_value)))
                 print("{} : after_action_value id = {}".format(np.round(after_action_value,3),id(after_action_value)))
@@ -471,7 +473,7 @@ class DQN_player():
             if self.print:
                 print("{} : after_update_qvalue".format(np.round(qvalues[action_backup],3)))            
                 print("{} : before_update_qvalues".format(np.round(qvalues,3)))
-                target_action_value = copy.deepcopy(qvalues)
+                target_action_value = [x for x in qvalues]
                 print("{} : new_qvalues".format(np.round(qvalues,3)))            
                 print("{} : target_action_value id = {}".format(np.round(target_action_value,3),target_action_value))            
             # 생성된 정답 데이터로 메인 신경망을 학습
@@ -479,7 +481,7 @@ class DQN_player():
             self.main_network.fit(x, y, epochs = 10, verbose=0)
             
             if self.print:
-                after_action_value = copy.deepcopy(self.main_network.predict(x)[0,:])
+                after_action_value = [x for x in self.main_network.predict(x)[0,:]]
                 delta = after_action_value - before_action_value
                 print("{} : before_action_value id = {}".format(np.round(before_action_value,3),id(before_action_value)))
                 print("{} : target_action_value id = {}".format(np.round(target_action_value,3),id(target_action_value)))
@@ -513,8 +515,8 @@ def main():
     print("p1 player is {}".format(p1_DQN.name))
     print("p2 player is {}".format(p2_DQN.name))
 
-    p1_DQN.load_weights('Q-P1.h5')
-    p2_DQN.load_weights('Q-P2.h5')
+    # p1_DQN.load_weights('Q-P1.h5')
+    # p2_DQN.load_weights('Q-P2.h5')
 
     for j in tqdm(range(max_learn)):
         np.random.seed(j)
@@ -532,7 +534,7 @@ def main():
         p2_DQN.epsilon = 0.7
         p2_DQN.copy_network()
 
-        for i in range(10000):
+        for i in range(100):
             # p1 행동을 선택
             player = 1
             action = p1_DQN.policy(env, player)

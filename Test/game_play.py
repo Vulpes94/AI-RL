@@ -95,13 +95,12 @@ class Monte_Carlo_player():
 
 
 # +
-p1 = DQN_player()
-p1.epsilon = 0
-p1.load_weights('Q-p1.h5')
+# p1 = DQN_player()
+# p1.epsilon = 0
+# p1.load_weights('Q-p1.h5')
 
-# p2 = Monte_Carlo_player()
-
-p2 = Human_player()
+p1 = Human_player()
+p2 = Monte_Carlo_player()
 
 while True:
     env = Environment()
